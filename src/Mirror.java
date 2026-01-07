@@ -1,4 +1,4 @@
-import java.awt.Point;
+import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -11,7 +11,7 @@ public class Mirror {
     private int width = 80;
     private int height = 10;
 
-    private Point[] points = new Point[4];
+    private Point2D.Double [] points = new Point2D.Double [4];
 
     public Mirror(){
         updatePoints();
@@ -49,8 +49,8 @@ public class Mirror {
         updatePoints();
     }
 
-    public Point getPos(){
-        return new Point(xpos, ypos);
+    public Point2D.Double  getPos(){
+        return new Point2D.Double (xpos, ypos);
     }
 
     public double getAngle(){
@@ -65,22 +65,22 @@ public class Mirror {
         return height;
     }
 
-    public Point[] getPoints(){
+    public Point2D.Double [] getPoints(){
         return points;
     }
 
-    public Point[] getRelPoints(Point ref){
+    public Point2D.Double [] getRelPoints(Point2D.Double  ref){
         Arrays.sort(points, Comparator.comparingDouble(e -> e.distanceSq(ref)));
 
-        Point[] ret = new Point[3];
+        Point2D.Double [] ret = new Point2D.Double [3];
         ret[0] = points[0];
 
         for(int i = 1; i < 3; i++){
-            int xc = (points[0].x + points[i].x) / 2;
-            int yc = (points[0].y + points[i].y) / 2;
+            double xc = (points[0].x + points[i].x) / 2;
+            double yc = (points[0].y + points[i].y) / 2;
 
-            int dx = xc - xpos;
-            int dy = yc - ypos;
+            double dx = xc - xpos;
+            double dy = yc - ypos;
 
             if(dx * (points[0].x - ref.x) + dy * (points[0].y - ref.y) < 0){
                 if(ret[1] == null){
@@ -108,18 +108,18 @@ public class Mirror {
             int xsign = ((((i + 1) / 2) % 2) * 2 - 1) * -1;
             int ysign = ((i / 2) * 2 - 1) * -1;
 
-            int x = xsign * (width / 2);
-            int y = ysign * (height / 2);
+            double x = xsign * ( (double) width / 2);
+            double y = ysign * ( (double) height / 2);
 
-            int x2 = (int) (x * Math.cos(angle) - y * Math.sin(angle));
-            int y2 = (int) (x * Math.sin(angle) + y * Math.cos(angle));
+            double x2 = (x * Math.cos(angle) - y * Math.sin(angle));
+            double y2 = (x * Math.sin(angle) + y * Math.cos(angle));
 
-            int x3 = xpos + x2;
-            int y3 = ypos + y2;
+            double x3 = xpos + x2;
+            double y3 = ypos + y2;
 
-            points[i] = new Point(x3, y3);
+            points[i] = new Point2D.Double(x3, y3);
 
-            //System.out.println("Point " + i + " is at " + x3 + ", " + y3);
+            //System.out.println("Point2D.Double  " + i + " is at " + x3 + ", " + y3);
         }
     }
 }

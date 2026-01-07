@@ -1,8 +1,8 @@
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +19,7 @@ public class Sim{
     private double angleLaser;
 
     private ArrayList<Mirror> mirrorList = new ArrayList<Mirror>();
-    private ArrayList<Point> pointList = new ArrayList<Point>();
+    private ArrayList<Point2D.Double > pointList = new ArrayList<Point2D.Double >();
 
     private static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
@@ -33,19 +33,19 @@ public class Sim{
         angleLaser = Math.PI / 4;
         // angleLaser = 0.2;
 
-        addMirror(new Mirror(200, 200, Math.PI / 4, 120, 120));
+        addMirror(new Mirror(250, 250, -1 * Math.PI / 4, 120, 20));
+        addMirror(new Mirror(400, 100, Math.PI / 2, 120, 20));
 
         panel = p;
     }
 
     public void start(){
-        
         tick();
     }
 
     public void tick(){
         for(int i = 0; i < mirrorList.size(); i++){
-            mirrorList.get(i).rotate(0.001);
+            mirrorList.get(i).rotate(0.005);
         }
         panel.repaint();
         executorService.schedule(this::tick, 10, TimeUnit.MILLISECONDS);
@@ -59,7 +59,7 @@ public class Sim{
 
         //loads bounce points into arraylist
         pointList.clear();
-        pointList.add(new Point(xLaser, yLaser));
+        pointList.add(new Point2D.Double (xLaser, yLaser));
         calcBounce(xLaser, yLaser, angleLaser);
 
         g.setColor(Color.BLACK);
@@ -82,7 +82,7 @@ public class Sim{
         //draws the laser
         g.setColor(Color.RED);
         for(int i = 0; i < pointList.size() - 1; i++){
-            g.drawLine(pointList.get(i).x, pointList.get(i).y, pointList.get(i + 1).x, pointList.get(i + 1).y);
+            g.drawLine((int) pointList.get(i).x, (int) pointList.get(i).y, (int) pointList.get(i + 1).x, (int) pointList.get(i + 1).y);
         }
 
         //draws laser base
@@ -91,17 +91,17 @@ public class Sim{
 
     }
 
-    public void calcBounce(int x, int y, double theta){
-        Point p = new Point(x, y);
+    public void calcBounce(double x, double y, double theta){
+        Point2D.Double p = new Point2D.Double(x, y);
 
         //closest point of intersection. If none are found, should go off (basically) to infinity
-        Point closest = new Point((int) (x + 2e3 * Math.cos(theta)), (int) (y + 2e3 * Math.sin(theta)));
+        Point2D.Double closest = new Point2D.Double ((int) (x + 2e3 * Math.cos(theta)), (int) (y + 2e3 * Math.sin(theta)));
         double closestAngle = 10;
 
         //checks through all mirrors
         for(int i = 0; i < mirrorList.size(); i++){
             //gets 2-3 closest points
-            Point[] ps = mirrorList.get(i).getRelPoints(p);
+            Point2D.Double[] ps = mirrorList.get(i).getRelPoints(p);
 
             //resorts the list according to angle
             sortPByAngle(p, ps);
@@ -109,7 +109,7 @@ public class Sim{
             //gets angles to each point
             double[] angles = getAngles(p, ps);
 
-            Point output = new Point();
+            Point2D.Double output = new Point2D.Double();
             pointAngle = 0;
 
             for(int j = 0; j < angles.length - 1; j++){
@@ -123,6 +123,9 @@ public class Sim{
             }
         }
 
+        //checks if it hits the laser emitter
+
+
         //starts next bounce
         pointList.add(closest);
         if(closestAngle != 10){
@@ -131,17 +134,17 @@ public class Sim{
     }
 
     //calculates the point of interception and resulting angle, updating the variables
-    public void calcIntercept(Point origin, double angle, Point p1, Point p2, Point output){
+    public void calcIntercept(Point2D.Double origin, double angle, Point2D.Double p1, Point2D.Double p2, Point2D.Double output){
 
         //coordinates and bounce angle of intersection 
-        int x = 0;
-        int y = 0;
+        double x = 0;
+        double y = 0;
         double a = 0;
 
-        int p1x = p1.x;
-        int p1y = p1.y;
-        int p2x = p2.x;
-        int p2y = p2.y;
+        double p1x = p1.x;
+        double p1y = p1.y;
+        double p2x = p2.x;
+        double p2y = p2.y;
 
         //if points are in other order
         if(p1x > p2x){
@@ -179,9 +182,9 @@ public class Sim{
     }
 
     //calculates angle from p2 to p1
-    public double pAngle(Point p1, Point p2){
-        int x = p2.x - p1.x;
-        int y = p2.y - p1.y;
+    public double pAngle(Point2D.Double p1, Point2D.Double p2){
+        double x = p2.x - p1.x;
+        double y = p2.y - p1.y;
 
         double a = Math.atan2(y,x);
 
@@ -189,16 +192,16 @@ public class Sim{
     }
 
     //returns array of points with furthest point(s) removed
-    public Point[] getPByDist(Point p, Point[] ps) {
+    public Point2D.Double [] getPByDist(Point2D.Double p, Point2D.Double[] ps) {
         Arrays.sort(ps, Comparator.comparingDouble(e -> e.distanceSq(p)));
         return Arrays.copyOf(ps, ps.length - 1);
     }
 
-    public void sortPByAngle(Point p, Point[] ps){
+    public void sortPByAngle(Point2D.Double p, Point2D.Double[] ps){
         Arrays.sort(ps, Comparator.comparingDouble(e -> pAngle(p, e)));
     }
 
-    public double[] getAngles(Point p1, Point[] ps){
+    public double[] getAngles(Point2D.Double p1, Point2D.Double[] ps){
         double[] angles = new double[ps.length];
         for(int i = 0; i < ps.length; i++){
             angles[i] = pAngle(p1, ps[i]);
