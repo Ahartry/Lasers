@@ -11,7 +11,7 @@ public class Mirror {
     private int width = 80;
     private int height = 10;
 
-    private Point2D.Double [] points = new Point2D.Double [4];
+    private Point2D.Double[] points = new Point2D.Double[4];
 
     public Mirror(){
         updatePoints();
@@ -49,8 +49,8 @@ public class Mirror {
         updatePoints();
     }
 
-    public Point2D.Double  getPos(){
-        return new Point2D.Double (xpos, ypos);
+    public Point2D.Double getPos(){
+        return new Point2D.Double(xpos, ypos);
     }
 
     public double getAngle(){
@@ -65,14 +65,14 @@ public class Mirror {
         return height;
     }
 
-    public Point2D.Double [] getPoints(){
+    public Point2D.Double[] getPoints(){
         return points;
     }
 
-    public Point2D.Double [] getRelPoints(Point2D.Double  ref){
+    public Point2D.Double[] getRelPoints(Point2D.Double ref){
         Arrays.sort(points, Comparator.comparingDouble(e -> e.distanceSq(ref)));
 
-        Point2D.Double [] ret = new Point2D.Double [3];
+        Point2D.Double[] ret = new Point2D.Double[3];
         ret[0] = points[0];
 
         for(int i = 1; i < 3; i++){
@@ -89,6 +89,10 @@ public class Mirror {
                     ret[2] = points[i];
                 }
             }
+        }
+
+        if(ret[0] == null){
+            System.out.println("THIS CODE SHOULD NEVER RUN");
         }
 
         if(ret[2] == null){

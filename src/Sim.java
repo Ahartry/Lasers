@@ -33,8 +33,8 @@ public class Sim{
         angleLaser = Math.PI / 4;
         // angleLaser = 0.2;
 
-        addMirror(new Mirror(250, 250, -1 * Math.PI / 4, 120, 20));
-        addMirror(new Mirror(400, 100, Math.PI / 2, 120, 20));
+        addMirror(new Mirror(250, 250, 0, 120, 20));
+        addMirror(new Mirror(350, 100, Math.PI / 2, 120, 20));
 
         panel = p;
     }
@@ -47,6 +47,7 @@ public class Sim{
         for(int i = 0; i < mirrorList.size(); i++){
             mirrorList.get(i).rotate(0.005);
         }
+        //mirrorList.get(1).rotate(0.005);
         panel.repaint();
         executorService.schedule(this::tick, 10, TimeUnit.MILLISECONDS);
     }
@@ -103,6 +104,11 @@ public class Sim{
             //gets 2-3 closest points
             Point2D.Double[] ps = mirrorList.get(i).getRelPoints(p);
 
+            if(ps[1] == null){
+                //System.out.println("This should not happen");
+                continue;
+            }
+
             //resorts the list according to angle
             sortPByAngle(p, ps);
 
@@ -129,7 +135,7 @@ public class Sim{
         //starts next bounce
         pointList.add(closest);
         if(closestAngle != 10){
-            calcBounce(p.x, p.y, closestAngle);
+            calcBounce(closest.x, closest.y, closestAngle);
         }
     }
 
@@ -163,17 +169,17 @@ public class Sim{
         //slope undefined
         if(p1x == p2x){
             x = p1x;
-            y = (int) ((p1x - origin.x) * Math.tan(angle) + origin.y);
-            System.out.println("case 1");
+            y = ((p1x - origin.x) * Math.tan(angle) + origin.y);
+            //System.out.println("case 1");
         //slope also undefined
         }else if(angle == Math.PI / 2 || angle == -1 * Math.PI / 2){
             x = origin.x;
-            y = (int) ((origin.x - p1x) * Math.tan(mirrorAngle) + p1y);
-            System.out.println("case 2");
+            y = ((origin.x - p1x) * Math.tan(mirrorAngle) + p1y);
+            //System.out.println("case 2");
         //regular case
         }else{
-            x = (int) (( (p1y - origin.y) + (origin.x * Math.tan(angle) - p1x * Math.tan(mirrorAngle)) ) / (Math.tan(angle) - Math.tan(mirrorAngle)));
-            y = (int) ((x - origin.x) * Math.tan(angle) + origin.y);
+            x = (( (p1y - origin.y) + (origin.x * Math.tan(angle) - p1x * Math.tan(mirrorAngle)) ) / (Math.tan(angle) - Math.tan(mirrorAngle)));
+            y = ((x - origin.x) * Math.tan(angle) + origin.y);
         }
 
         output.x = x;
@@ -192,12 +198,15 @@ public class Sim{
     }
 
     //returns array of points with furthest point(s) removed
-    public Point2D.Double [] getPByDist(Point2D.Double p, Point2D.Double[] ps) {
-        Arrays.sort(ps, Comparator.comparingDouble(e -> e.distanceSq(p)));
-        return Arrays.copyOf(ps, ps.length - 1);
-    }
+    // public Point2D.Double [] getPByDist(Point2D.Double p, Point2D.Double[] ps) {
+    //     Arrays.sort(ps, Comparator.comparingDouble(e -> e.distanceSq(p)));
+    //     return Arrays.copyOf(ps, ps.length - 1);
+    // }
 
     public void sortPByAngle(Point2D.Double p, Point2D.Double[] ps){
+        if(ps.length == 0){
+            return;
+        }
         Arrays.sort(ps, Comparator.comparingDouble(e -> pAngle(p, e)));
     }
 
