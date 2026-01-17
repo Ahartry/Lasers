@@ -18,6 +18,11 @@ public class Sim{
     private int lSize = 40;
     private double angleLaser;
 
+    private int bounceDepth = 0;
+    private int prevMirror = -1;
+
+    public boolean paused = false;
+
     private ArrayList<Mirror> mirrorList = new ArrayList<Mirror>();
     private ArrayList<Point2D.Double > pointList = new ArrayList<Point2D.Double >();
 
@@ -33,8 +38,9 @@ public class Sim{
         angleLaser = Math.PI / 4;
         // angleLaser = 0.2;
 
-        addMirror(new Mirror(250, 250, 0, 120, 20));
-        addMirror(new Mirror(350, 100, Math.PI / 2, 120, 20));
+        addMirror(new Mirror(200, 250, 0, 120, 120));
+        //addMirror(new Mirror(300, 100, Math.PI / 2, 120, 20));
+        addMirror(new Mirror(50, 150, 0, 60, 60));
 
         panel = p;
     }
@@ -45,11 +51,23 @@ public class Sim{
 
     public void tick(){
         for(int i = 0; i < mirrorList.size(); i++){
-            mirrorList.get(i).rotate(0.005);
+            mirrorList.get(i).rotate();
         }
-        //mirrorList.get(1).rotate(0.005);
+        if(!paused){
+            nextTick();
+        }
+    }
+
+    public void nextTick(){
         panel.repaint();
         executorService.schedule(this::tick, 10, TimeUnit.MILLISECONDS);
+    }
+
+    public void togglePause(){
+        paused = !paused;
+        if(!paused){
+            start();
+        }
     }
 
     public void addMirror(Mirror mirror){
@@ -61,6 +79,8 @@ public class Sim{
         //loads bounce points into arraylist
         pointList.clear();
         pointList.add(new Point2D.Double (xLaser, yLaser));
+        bounceDepth = 0;
+        prevMirror = -1;
         calcBounce(xLaser, yLaser, angleLaser);
 
         g.setColor(Color.BLACK);
@@ -96,36 +116,37 @@ public class Sim{
         Point2D.Double p = new Point2D.Double(x, y);
 
         //closest point of intersection. If none are found, should go off (basically) to infinity
-        Point2D.Double closest = new Point2D.Double ((int) (x + 2e3 * Math.cos(theta)), (int) (y + 2e3 * Math.sin(theta)));
+        Point2D.Double closest = new Point2D.Double((int) (x + 1e4 * Math.cos(theta)), (int) (y + 1e4 * Math.sin(theta)));
         double closestAngle = 10;
 
         //checks through all mirrors
         for(int i = 0; i < mirrorList.size(); i++){
-            //gets 2-3 closest points
-            Point2D.Double[] ps = mirrorList.get(i).getRelPoints(p);
 
-            if(ps[1] == null){
-                //System.out.println("This should not happen");
+            if(i == prevMirror){
+                continue;
+            }
+
+            //gets 2-3 closest points
+            Point2D.Double[] ps = mirrorList.get(i).getRelPoints(p, theta);
+
+            if(ps[0] == null){
                 continue;
             }
 
             //resorts the list according to angle
-            sortPByAngle(p, ps);
-
-            //gets angles to each point
-            double[] angles = getAngles(p, ps);
+            //sortPByAngle(p, ps);
 
             Point2D.Double output = new Point2D.Double();
             pointAngle = 0;
 
-            for(int j = 0; j < angles.length - 1; j++){
-                if(theta > angles[j] && theta < angles[j + 1]){
-                    calcIntercept(p, theta, ps[j], ps[j + 1], output);
-                    if(p.distanceSq(output) < p.distanceSq(closest)){
-                        closest = output;
-                        closestAngle = pointAngle;
-                    }
-                }
+            calcIntercept(p, theta, ps[0], ps[1], output);
+            if(p.distanceSq(output) < p.distanceSq(closest)){
+
+                System.out.println("Bounce " + bounceDepth + " in between " + strP(ps[0]) + " and " + strP(ps[1]));
+                System.out.println("This intercept is at " + strP(output) + "\n");
+                closest = output;
+                closestAngle = pointAngle;
+                prevMirror = i;
             }
         }
 
@@ -135,6 +156,7 @@ public class Sim{
         //starts next bounce
         pointList.add(closest);
         if(closestAngle != 10){
+            bounceDepth += 1;
             calcBounce(closest.x, closest.y, closestAngle);
         }
     }
@@ -197,25 +219,11 @@ public class Sim{
         return a;
     }
 
-    //returns array of points with furthest point(s) removed
-    // public Point2D.Double [] getPByDist(Point2D.Double p, Point2D.Double[] ps) {
-    //     Arrays.sort(ps, Comparator.comparingDouble(e -> e.distanceSq(p)));
-    //     return Arrays.copyOf(ps, ps.length - 1);
-    // }
-
     public void sortPByAngle(Point2D.Double p, Point2D.Double[] ps){
         if(ps.length == 0){
             return;
         }
         Arrays.sort(ps, Comparator.comparingDouble(e -> pAngle(p, e)));
-    }
-
-    public double[] getAngles(Point2D.Double p1, Point2D.Double[] ps){
-        double[] angles = new double[ps.length];
-        for(int i = 0; i < ps.length; i++){
-            angles[i] = pAngle(p1, ps[i]);
-        }
-        return angles;
     }
 
     public ArrayList<Mirror> getMirrorList(){
@@ -224,5 +232,33 @@ public class Sim{
 
     public void setPointAngle(double a){
         pointAngle = a;
+    }
+
+    public int getMirrorFromPoint(Point2D.Double p){
+        int ret = -1;
+
+        //checks all mirrors for intersection
+        for(int i = 0; i < mirrorList.size(); i++){
+            double a = -1 * mirrorList.get(i).getAngle();
+            Point2D.Double ref = mirrorList.get(i).getPos();
+
+            //rotates the point by the opposite rotation 
+            double x2 = ((p.x - ref.x) * Math.cos(a) - (p.y - ref.y) * Math.sin(a)) + ref.x;
+            double y2 = ((p.x - ref.x) * Math.sin(a) + (p.y - ref.y) * Math.cos(a)) + ref.y;
+
+            //checks if within unrotated rectangle
+            if(x2 < ref.x + mirrorList.get(i).getWidth() / 2 && x2 > ref.x - mirrorList.get(i).getWidth() / 2){
+                if(y2 < ref.y + mirrorList.get(i).getHeight() / 2 && y2 > ref.y - mirrorList.get(i).getHeight() / 2){
+                    ret = i;
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static String strP(Point2D.Double p){
+        return "[" + String.format("%.2f", p.x) + ", " + String.format("%.2f", p.y) + "]";
     }
 }

@@ -5,11 +5,14 @@ import java.util.Comparator;
 public class Mirror {
 
     private double angle = 0;
+    private double omega = 0.005;
     private int xpos = 0;
     private int ypos = 0;
 
     private int width = 80;
     private int height = 10;
+
+    private boolean enabled = true;
 
     private Point2D.Double[] points = new Point2D.Double[4];
 
@@ -33,9 +36,15 @@ public class Mirror {
         updatePoints();
     }
 
-    public void move(int x, int y){
+    public void moveTo(int x, int y){
         xpos = x;
         ypos = y;
+        updatePoints();
+    }
+
+    public void moveTo(double x, double y){
+        xpos = (int) x;
+        ypos = (int) y;
         updatePoints();
     }
 
@@ -44,9 +53,28 @@ public class Mirror {
         updatePoints();
     }
 
-    public void rotate(double a){
-        angle += a;
+    // public void rotate(double a){
+    //     angle += a;
+    //     updatePoints();
+    // }
+
+    public void rotate(){
+        if(enabled){
+            angle += omega;
+        }
         updatePoints();
+    }
+
+    public void setOmega(double o){
+        omega = o;
+    }
+
+    public void enableRot(){
+        enabled = true;
+    }
+
+    public void disableRot(){
+        enabled = false;
     }
 
     public Point2D.Double getPos(){
@@ -69,38 +97,31 @@ public class Mirror {
         return points;
     }
 
-    public Point2D.Double[] getRelPoints(Point2D.Double ref){
+    public Point2D.Double[] getRelPoints(Point2D.Double ref, double theta){
         Arrays.sort(points, Comparator.comparingDouble(e -> e.distanceSq(ref)));
 
-        Point2D.Double[] ret = new Point2D.Double[3];
-        ret[0] = points[0];
+        double[] angles = getAngles(ref, points);
+        Point2D.Double[] ret = new Point2D.Double[2];
 
+        //checks the two faces made by p0 and each p1 and p2
         for(int i = 1; i < 3; i++){
-            double xc = (points[0].x + points[i].x) / 2;
-            double yc = (points[0].y + points[i].y) / 2;
-
-            double dx = xc - xpos;
-            double dy = yc - ypos;
-
-            if(dx * (points[0].x - ref.x) + dy * (points[0].y - ref.y) < 0){
-                if(ret[1] == null){
-                    ret[1] = points[i];
-                }else{
-                    ret[2] = points[i];
+            //only possible if the angles are across the discontinuity
+            if(Math.abs(angles[0] - angles[i]) > Math.PI){
+                if(isInRange(theta, angles[0], angles[i])){
+                    continue;
                 }
+            }
+            if(!isInRange(theta, angles[0], angles[i])){
+                continue;
+            }
+
+            if(isFacing(0, i, theta)){
+                ret[0] = points[0];
+                ret[1] = points[i];
             }
         }
 
-        if(ret[0] == null){
-            System.out.println("THIS CODE SHOULD NEVER RUN");
-        }
-
-        if(ret[2] == null){
-            return Arrays.copyOf(ret, 2);
-        }else{
-            return Arrays.copyOf(ret, 3);
-        }
-
+        return ret;
     }
 
     public void updatePoints(){
@@ -126,4 +147,41 @@ public class Mirror {
             //System.out.println("Point2D.Double  " + i + " is at " + x3 + ", " + y3);
         }
     }
+
+    //calculates angle from p2 to p1
+    public double pAngle(Point2D.Double p1, Point2D.Double p2){
+        double x = p2.x - p1.x;
+        double y = p2.y - p1.y;
+
+        double a = Math.atan2(y,x);
+
+        return a;
+    }
+
+    public double[] getAngles(Point2D.Double p1, Point2D.Double[] ps){
+        double[] angles = new double[ps.length];
+        for(int i = 0; i < ps.length; i++){
+            angles[i] = pAngle(p1, ps[i]);
+        }
+        return angles;
+    }
+
+    public boolean isInRange(double val, double b1, double b2){
+        if( (b1 < val && val < b2) || (b2 < val && val < b1) ){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public boolean isFacing(int p1, int p2, double theta){
+        double xc = (points[p1].x + points[p2].x) / 2;
+        double yc = (points[p1].y + points[p2].y) / 2;
+
+        double dx = xc - xpos;
+        double dy = yc - ypos;
+
+        return Math.cos(theta) * dx + Math.sin(theta) * dy < 0;
+    }
+
 }
