@@ -38,9 +38,9 @@ public class Sim{
         angleLaser = Math.PI / 4;
         // angleLaser = 0.2;
 
-        addMirror(new Mirror(200, 250, 0, 120, 120));
-        //addMirror(new Mirror(300, 100, Math.PI / 2, 120, 20));
-        addMirror(new Mirror(50, 150, 0, 60, 60));
+        addMirror(new Mirror(200, 250, 120, 120, 0, 0.005));
+        addMirror(new Mirror(300, 100, 120, 20, Math.PI / 2, 0.012));
+        addMirror(new Mirror(50, 150, 60, 60, 0, 0.008));
 
         panel = p;
     }
@@ -142,8 +142,8 @@ public class Sim{
             calcIntercept(p, theta, ps[0], ps[1], output);
             if(p.distanceSq(output) < p.distanceSq(closest)){
 
-                System.out.println("Bounce " + bounceDepth + " in between " + strP(ps[0]) + " and " + strP(ps[1]));
-                System.out.println("This intercept is at " + strP(output) + "\n");
+                // System.out.println("Bounce " + bounceDepth + " in between " + strP(ps[0]) + " and " + strP(ps[1]));
+                // System.out.println("This intercept is at " + strP(output) + "\n");
                 closest = output;
                 closestAngle = pointAngle;
                 prevMirror = i;
@@ -203,6 +203,9 @@ public class Sim{
             x = (( (p1y - origin.y) + (origin.x * Math.tan(angle) - p1x * Math.tan(mirrorAngle)) ) / (Math.tan(angle) - Math.tan(mirrorAngle)));
             y = ((x - origin.x) * Math.tan(angle) + origin.y);
         }
+
+        //normalizes angle
+        a = a - (2*Math.PI) * Math.floor((a + Math.PI) / (2*Math.PI));
 
         output.x = x;
         output.y = y;

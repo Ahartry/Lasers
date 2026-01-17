@@ -27,12 +27,13 @@ public class Mirror {
         updatePoints();
     }
 
-    public Mirror(int x, int y, double a, int w, int h){
+    public Mirror(int x, int y, int w, int h, double a, double o){
         xpos = x;
         ypos = y;
-        angle = a;
         width = w;
         height = h;
+        angle = a;
+        omega = o;
         updatePoints();
     }
 
@@ -110,8 +111,7 @@ public class Mirror {
                 if(isInRange(theta, angles[0], angles[i])){
                     continue;
                 }
-            }
-            if(!isInRange(theta, angles[0], angles[i])){
+            }else if(!isInRange(theta, angles[0], angles[i])){
                 continue;
             }
 

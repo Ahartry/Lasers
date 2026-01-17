@@ -62,6 +62,11 @@ public class GPanel extends JPanel{
             @Override
             public void mouseClicked(MouseEvent e) { 
                 int s = sim.getMirrorFromPoint(new Point2D.Double(e.getX(), e.getY()));
+
+                if(s == -1){
+                    return;
+                }
+                
                 Point2D.Double ps[] = sim.getMirrorList().get(s).getPoints();
                 
                 System.out.println("Points on mirror " + s + " are:");
