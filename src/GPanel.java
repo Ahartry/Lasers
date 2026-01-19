@@ -17,6 +17,7 @@ public class GPanel extends JPanel{
     Point2D.Double selectedPoint;
     Point2D.Double startPoint;
     double selectedAngle;
+    double startAngle;
 
     public GPanel(){
         sim = new Sim(this);
@@ -25,11 +26,13 @@ public class GPanel extends JPanel{
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseReleased(MouseEvent e) { 
-                if(selected != -1){
+
+                selectedPoint = null;
+                startPoint = null;
+                selected = -1;
+
+                if(selected > -1){
                     sim.getMirrorList().get(selected).enableRot();
-                    selectedPoint = null;
-                    startPoint = null;
-                    selected = -1;
                 }
             }
         }); 
@@ -37,21 +40,43 @@ public class GPanel extends JPanel{
             @Override
             public void mouseDragged(MouseEvent e){
                 if(selected == -1){
-                    selected = sim.getMirrorFromPoint(new Point2D.Double(e.getX(), e.getY()));
+
+                    //all info about the click point
+                    selected = sim.getMirrorFromPoint(new Point2D.Double(e.getX(), e.getY()));;
+                    startPoint = new Point2D.Double(e.getX(), e.getY());
+
                     if(selected == -1){
                         return;
+                    }else if(selected == -2){
+                        selectedPoint = new Point2D.Double(sim.getXLaser(), sim.getYLaser());
+                        selectedAngle = Math.atan2(e.getY() - selectedPoint.y, e.getX() - selectedPoint.x);
+                        startAngle = sim.getLaserAngle();
+                    }else{
+                        startAngle = sim.getMirrorList().get(selected).getAngle();
+                        selectedPoint = sim.getMirrorList().get(selected).getPos();
+                        selectedAngle = Math.atan2(e.getY() - selectedPoint.y, e.getX() - selectedPoint.x);
+                        sim.getMirrorList().get(selected).disableRot();
                     }
-                    selectedPoint = sim.getMirrorList().get(selected).getPos();
-                    selectedAngle = Math.atan2(e.getY() - selectedPoint.y, e.getX() - selectedPoint.x);
-                    startPoint = new Point2D.Double(e.getX(), e.getY());
-                    sim.getMirrorList().get(selected).disableRot();
+
                 }else{
                     if(SwingUtilities.isRightMouseButton(e)){
                         double angle = Math.atan2(e.getY() - selectedPoint.y, e.getX() - selectedPoint.x);
                         double dAngle = (angle - selectedAngle)/2;
-                        sim.getMirrorList().get(selected).setRotation(dAngle);
+                        if(selected >= 0){
+                            sim.getMirrorList().get(selected).setRotation(dAngle + startAngle);
+                        }else{
+                            dAngle *= 2;
+                            sim.setLaserAngle(dAngle + startAngle);
+                        }
+                        
                     }else if(SwingUtilities.isLeftMouseButton(e)){
-                        sim.getMirrorList().get(selected).moveTo(selectedPoint.x + (e.getX() - startPoint.x), selectedPoint.y + (e.getY() - startPoint.y));
+                        double newXPos = selectedPoint.x + (e.getX() - startPoint.x);
+                        double newYPos = selectedPoint.y + (e.getY() - startPoint.y);
+                        if(selected >= 0){
+                            sim.getMirrorList().get(selected).moveTo(newXPos, newYPos);
+                        }else{
+                            sim.moveLaser(newXPos, newYPos);
+                        }
                     }
 
                     repaint();
@@ -63,7 +88,7 @@ public class GPanel extends JPanel{
             public void mouseClicked(MouseEvent e) { 
                 int s = sim.getMirrorFromPoint(new Point2D.Double(e.getX(), e.getY()));
 
-                if(s == -1){
+                if(s < 0){
                     return;
                 }
                 

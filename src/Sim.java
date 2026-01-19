@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Sim{
 
-    private int xLaser;
-    private int yLaser;
+    private double xLaser;
+    private double yLaser;
     private int lSize = 40;
     private double angleLaser;
 
@@ -41,6 +41,9 @@ public class Sim{
         addMirror(new Mirror(200, 250, 120, 120, 0, 0.005));
         addMirror(new Mirror(300, 100, 120, 20, Math.PI / 2, 0.012));
         addMirror(new Mirror(50, 150, 60, 60, 0, 0.008));
+
+        // addMirror(new Mirror(200, 250, 500, 20, 0, 0.00));
+        // addMirror(new Mirror(200, 250, 500, 20, 0, 0.00));
 
         panel = p;
     }
@@ -108,7 +111,7 @@ public class Sim{
 
         //draws laser base
         g.setColor(Color.GRAY);
-        g.fillOval(xLaser - (lSize / 2), yLaser - (lSize / 2), lSize, lSize);
+        g.fillOval((int) xLaser - (lSize / 2), (int) yLaser - (lSize / 2), lSize, lSize);
 
     }
 
@@ -205,11 +208,15 @@ public class Sim{
         }
 
         //normalizes angle
-        a = a - (2*Math.PI) * Math.floor((a + Math.PI) / (2*Math.PI));
+        a = normAngle(a);
 
         output.x = x;
         output.y = y;
         setPointAngle(a);
+    }
+
+    public double normAngle(double a){
+        return a - (2*Math.PI) * Math.floor((a + Math.PI) / (2*Math.PI));
     }
 
     //calculates angle from p2 to p1
@@ -258,10 +265,35 @@ public class Sim{
             }
         }
 
+        if(p.distance(new Point2D.Double(xLaser, yLaser)) < lSize){
+            ret = -2;
+        }
+
         return ret;
     }
 
     public static String strP(Point2D.Double p){
         return "[" + String.format("%.2f", p.x) + ", " + String.format("%.2f", p.y) + "]";
+    }
+
+    public void setLaserAngle(Double a){
+        angleLaser = normAngle(a);
+    }
+
+    public double getLaserAngle(){
+        return angleLaser;
+    }
+
+    public void moveLaser(double x, double y){
+        xLaser = x;
+        yLaser = y;
+    }
+
+    public double getXLaser(){
+        return xLaser;
+    }
+    
+    public double getYLaser(){
+        return yLaser;
     }
 }
